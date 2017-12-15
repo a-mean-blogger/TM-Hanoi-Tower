@@ -159,18 +159,98 @@ function reset(){
 
   TMS.cursor.hide();
   TMS.clearScreen();
+  TMI.keyboard.clearKeyPressed();
   drawFrame();
   drawMove();
   drawCursor();
   drawTower();
 }
 
+function moveCursor(dir){
+  var isCursorMoved = false;
+  if((dir== 1 && cursorPosition<NUM_OF_POLES-1)
+  || (dir==-1 && cursorPosition>0)){
+    cursorPosition += dir;
+    isCursorMoved = true;
+  }
+  return isCursorMoved;
+}
+
+function pickUpDisk(){
+  var isDiskPickedUp = false;
+  if(cursorPosition >= 0
+  && cursorPosition <= NUM_OF_POLES
+  && cursorDiskValue === 0){
+    cursorDiskValue = towerData[cursorPosition].pop();
+    isDiskPickedUp = true;
+  }
+  return isDiskPickedUp;
+}
+
+function dropDisk(){
+  var isDiskDropped = false;
+  if(cursorPosition >= 0
+  && cursorPosition <= NUM_OF_POLES
+  && cursorDiskValue > 0){
+    if(towerData[cursorPosition].length == 0
+    || towerData[cursorPosition][towerData[cursorPosition].length-1] > cursorDiskValue){
+      towerData[cursorPosition].push(cursorDiskValue);
+      cursorDiskValue = 0;
+      isDiskDropped = true;
+    }
+  }
+  return isDiskDropped;
+}
+
+function checkGameOver(){
+  var isGameOver = (towerData[NUM_OF_POLES-1][NUM_OF_DISKS-1]==1)?true:false;
+  return isGameOver;
+}
+
+var mainInterval = window.setInterval(function(){
+  if(TMI.keyboard.checkKeyPressed(KEYSET.ESC)){
+    reset();
+  }
+
+  if(!isGameOver){
+    var isCursorUpdated = false;
+    var isTowerUpdated = false;
+    var isMoveUpdated = false;
+    if(TMI.keyboard.checkKeyPressed(KEYSET.RIGHT)
+    && moveCursor(1)){
+      isCursorUpdated = true;
+    }
+    if(TMI.keyboard.checkKeyPressed(KEYSET.LEFT)
+    && moveCursor(-1)){
+      isCursorUpdated = true;
+    }
+    if(TMI.keyboard.checkKeyPressed(KEYSET.ENTER)){
+      if(cursorDiskValue && dropDisk()){
+        moveCount++;
+        isCursorUpdated = true;
+        isTowerUpdated = true;
+        isMoveUpdated = true;
+        isGameOver = checkGameOver();
+      }
+      else if(!cursorDiskValue && pickUpDisk()){
+        isCursorUpdated = true;
+        isTowerUpdated = true;
+      }
+    }
+
+    if(isCursorUpdated) drawCursor();
+    if(isTowerUpdated) drawTower();
+    if(isMoveUpdated) drawMove();
+    if(isGameOver) drawGameOver();
+  }
+
+  TMD.print('debug-data',{
+    moveCount: moveCount,
+    cursorPosition: cursorPosition,
+    cursorDiskValue: cursorDiskValue,
+    isGameOver: isGameOver,
+  });
+}, 40);
+
 
 reset();
-
-TMD.print('debug-data',{
-  moveCount: moveCount,
-  cursorPosition: cursorPosition,
-  cursorDiskValue: cursorDiskValue,
-  isGameOver: isGameOver,
-});
